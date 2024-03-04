@@ -1,0 +1,31 @@
+#Este código es el intento de programar una versión paralelizada del
+#algoritmo SHPC desarrollado por sofía, carlos y ana
+#El autor de este código es Johan, y espeor que sirva en un futuro dado
+
+
+#Carga de librerias
+
+import numpy as np
+from numpy import asarray
+import math as mt
+from pycuda.compiler import SourceModule
+import glob
+from Funciones import *
+import cv2 as cv
+#Hay más cosas que debo considerar, en general siento que
+#Esto lo saqué del de kreuzer porque al final es la misma vaina
+
+#Cargamos el archivo del holograma
+
+archivo = "./Imagenes/Topicos/*.jpeg"
+images = lectura_continua(archivo)
+
+exposure_times =[1/16000,1/12000,1/8000,1/6000,1/4000,1/3000,1/2000,1/1500,1/1000,1/750,1/500,1/350,1/250,1/180,1/125,1/90,1/50]
+# Voltear el array utilizando el slicing con paso -1
+merge_debevec = cv.createMergeDebevec()h
+dr_debevec = merge_debevec.process(images, times=exposure_times.copy())
+# Tonemap HDR image
+tonemap1 = cv.createTonemap(gamma=2.2)
+res_debevec = tonemap1.process(hdr_debevec.copy())
+# Exposure fusion using Mertens: exposure times are not required
+merge_mertens = cv.createMergeMertens()res_mertens = merge_mertens.process(images)# Convert datatype to 8-bit and saveres_debevec_8bit = np.clip(res_debevec*255, 0, 255).astype('uint8')res_mertens_8bit = np.clip(res_mertens*255, 0, 255).astype('uint8')cv.imwrite("ldr_debevec.jpg", res_debevec_8bit)cv.imwrite("fusion_mertens.jpg", res_mertens_8bit)# Second option (without exposure times)# Estimate camera response function (CRF)calibrate = cv.createCalibrateDebevec()response = calibrate.process(images, exposure_times)# Create HDR imagemerge_debevec = cv.createMergeDebevec()hdr = merge_debevec.process(images, times=exposure_times, response=response)# Tonemap HDR image to displayable rangetonemap = cv.createTonemap(gamma=2.2)ldr = tonemap.process(hdr)# Save the HDR and tonemapped imagescv.imwrite('result_hdr.png', hdr/hdr.max()*255)cv.imwrite('result_tonemapped.jpg', ldr * 255)

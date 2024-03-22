@@ -20,7 +20,15 @@ def ajuste_tamano(archivo):
     N_, M_ = archivo.size
     N_ = N_ // 64
     M_ = M_ // 64
-    replica = archivo.resize((N_*64,M_*64)) 
+    replica = np.resize(archivo, (N_*64,M_*64))
+    return (replica)
+
+def ajuste_tamano1(archivo):
+    N_, M_ = archivo.shape
+    N_ = N_ // 64
+    M_ = M_ // 64
+    vector = archivo.flatten()
+    replica = np.resize(archivo, (N_*64,M_*64))
     return (replica)
 
 def lectura_continua(direccion):
@@ -35,7 +43,9 @@ def lectura_continua(direccion):
 
 # Función para el guardado de la imagen
 def guardado(name_out, matriz):
+    
     resultado = Image.fromarray(matriz)
+    resultado = resultado.convert('RGB')
     resultado.save("./"+str(name_out))
 
 # Función para graficar y ponerle nombre a los ejes

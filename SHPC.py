@@ -10,7 +10,7 @@ from numpy import asarray
 from Funciones import *
 import spicy as sp
 import math as mt
-
+import time
 #Funcion de reconstrucción
 
 def tiro(holo,fx_0,fy_0,fx_tmp, fy_tmp,lamb,M,N,dx,dy,k,m,n):
@@ -35,9 +35,10 @@ def tiro(holo,fx_0,fy_0,fx_tmp, fy_tmp,lamb,M,N,dx,dy,k,m,n):
     value=np.sum(fase)
     return value, fase1
 
-archivo = "Imagenes/frames/001.bmp"
+archivo = "Imagenes/holo_ESP_466.bmp"
 replica = lectura(archivo)
 U = asarray(replica)
+tiempo_inicial = time.time()
 N, M = U.shape
 #Parametros del montaje
 
@@ -101,8 +102,7 @@ paso=0.2
 fin=0
 fx=pos_max[1]
 fy=pos_max[0]
-print(fx)
-print(fy)
+
 G_temp=G
 suma_maxima=0
 
@@ -132,8 +132,6 @@ while fin==0:
 
 theta_x=mt.asin((Fox - fx) * lamb /(M*dx))
 theta_y=mt.asin((Foy - fy) * lamb /(N*dy))
-print(fx)
-print(fy)
 fase= np.exp(1j*k* ((mt.sin(theta_x) * m * dx)+ ((mt.sin(theta_y) * n * dy))))
 holo=fourier*fase
 fase1=fase
@@ -141,7 +139,13 @@ fase = np.angle(holo, deg=False)
 min_val = np.min(fase)
 max_val = np.max(fase)
 fase = 255*(fase - min_val) / (max_val - min_val)
+tiempo_final = time.time()
+tiempo= tiempo_final-tiempo_inicial
+print(tiempo)
+nombre='Imagenes/reconstruccion_serial.jpg'
+guardado(nombre, fase)
 titulo = "a"
 ejex_1 = "b"
 ejey_1 = "c"
-mostrar((fase),titulo,ejex_1,ejey_1)
+
+mostrar(np.log(b ),titulo,ejex_1,ejey_1)

@@ -1,5 +1,6 @@
 import cv2
 import tkinter as tk
+from tkinter import ttk
 from PIL import Image, ImageTk
 import numpy as np
 from numpy import asarray
@@ -11,6 +12,9 @@ import pycuda.gpuarray as gpuarray
 import skcuda.fft as cu_fft
 from pycuda.reduction import ReductionKernel
 from Funciones import *
+import time
+import ttkbootstrap as ttkb
+from ttkbootstrap.constants import *
 
 #Carga del kernel de cuda
 
@@ -18,7 +22,7 @@ mod = SourceModule("""
 #include <math.h>
 #include <stdio.h>
 #include <cuComplex.h>
-#include <limits>
+#include <limits.h>
 
                    /*FUNCIONES PARALELIZADAS DEL ALGORITMO*/
 
@@ -265,11 +269,16 @@ float find_max_min_gpu(const float *U_gpu, int N, int M, int block_size) {
 
 #Llamamos las funciones de CUDA
 
-
+def escalar_imagen(imagen, escala):
+    ancho_nuevo = int(imagen.width() * escala)
+    alto_nuevo = int(imagen.height() * escala)
+    imagen = imagen.subsample(ancho_nuevo, alto_nuevo)
+    return imagen
 
 #Todo sea para la GUI
 class AplicacionCamara:
     #Creamos el entorno de la GUI
+
     def __init__(self, ventana):
         
         #Captura de funcione
@@ -287,56 +296,84 @@ class AplicacionCamara:
         self.find_max_min = mod.get_function("find_max_min")
         self.logaritmo = mod.get_function("Amplitud_log")
         self.ini=0
-        self.ventana = ventana
-        self.ventana.title("Captura y Transformación de Cámara")
+        # Definir el tamaño inicial de la ventana (ancho x alto)self.ventana = ventana
+        ventana.geometry("800x600")
+        ventana.title("Captura y Transformación de Cámara")
 
         # Inicializar la captura de la cámara
         self.cap = cv2.VideoCapture(0)
         
-        # Crear widgets para mostrar las imágenes y títulos
-        self.label_original = tk.Label(ventana)
+        # Widgets para mostrar las imágenes
+        self.label_original = ttk.Label(ventana)
         self.label_original.grid(row=0, column=0, sticky="nsew")
-        self.label_transformacion1 = tk.Label(ventana)
+        self.label_transformacion1 = ttk.Label(ventana)
         self.label_transformacion1.grid(row=0, column=2, sticky="nsew")
-        self.label_transformacion2 = tk.Label(ventana)
+        self.label_transformacion2 = ttk.Label(ventana)
         self.label_transformacion2.grid(row=0, column=4, sticky="nsew")
 
-        # Crear widgets para las cajas de entrada y botón
-        self.title = tk.Label(ventana, text="Original")
-        self.title.grid(row=1, column=0, sticky="ew")
-        self.title = tk.Label(ventana, text="Transformada de fourier")
-        self.title.grid(row=1, column=2, sticky="ew")
-        self.title = tk.Label(ventana, text="Mapa de fase")
-        self.title.grid(row=1, column=4, sticky="ew")
+        # Títulos para las imágenes
+        ttk.Label(ventana, text="Original").grid(row=1, column=0, sticky="ew")
+        ttk.Label(ventana, text="Transformada de Fourier").grid(row=1, column=2, sticky="ew")
+        ttk.Label(ventana, text="Mapa de fase").grid(row=1, column=4, sticky="ew")
 
-        self.label_param1 = tk.Label(ventana, text="dx")
-        self.label_param1.grid(row=2, column=0, sticky="e")
-        self.entry_param1 = tk.Entry(ventana)
+        # Entradas para los parámetros
+        ttk.Label(ventana, text="dx").grid(row=2, column=0, sticky="e")
+        self.ventana = ventana
+        self.entry_param1 = ttk.Entry(ventana)
         self.entry_param1.grid(row=2, column=1, sticky="ew")
         
-        self.label_param2 = tk.Label(ventana, text="dy:")
-        self.label_param2.grid(row=3, column=0, sticky="e")
-        self.entry_param2 = tk.Entry(ventana)
+        ttk.Label(ventana, text="dy:").grid(row=3, column=0, sticky="e")
+        self.entry_param2 = ttk.Entry(ventana)
         self.entry_param2.grid(row=3, column=1, sticky="ew")
         
-        self.label_param3 = tk.Label(ventana, text="longitud de onda:")
-        self.label_param3.grid(row=3, column=2, sticky="e")
-        self.entry_param3 = tk.Entry(ventana)
+        ttk.Label(ventana, text="Longitud de onda:").grid(row=3, column=2, sticky="e")
+        self.entry_param3 = ttk.Entry(ventana)
         self.entry_param3.grid(row=3, column=3, sticky="ew")
 
-        self.label_param4 = tk.Label(ventana, text="cuadrante")
-        self.label_param4.grid(row=2, column=2, sticky="e")
-        self.entry_param4 = tk.Entry(ventana)
+        ttk.Label(ventana, text="Cuadrante").grid(row=2, column=2, sticky="e")
+        self.entry_param4 = ttk.Entry(ventana)
         self.entry_param4.grid(row=2, column=3, sticky="ew", pady=20)
-        
+
         self.boton_aplicar = tk.Button(ventana, text="Aplicar", command=self.aplicar_transformaciones)
         self.boton_aplicar.grid(row=4, column=2)
+        # Crear el cuadro desplegable
+        self.opciones_grabacion = ttk.Combobox(ventana, values=["Solo reconstruccion", "Reconstrucccion y origen"],state="readonly")
+
+        self.opciones_grabacion.current(0)  # Establecer la opción predeterminada
+
+        # Crear el botón de grabar
+        self.boton_grabar = tk.Button(ventana, text="Grabar", command=self.toggle_grabacion)
+        
+
+        # Inicializar la variable de estado de la grabación
+        self.grabando = False
+
 
         # Llamar al método para capturar y mostrar fotogramas
         self.mostrar_fotogramas()
         self.ini2=0
+        
     #Esta función lo que hace es tomar el fotograma de la camara del pc
     #Toca adaptarla para la camara que se planea usar
+    def toggle_grabacion(self):
+        if not self.grabando:
+            self.grabar = self.opciones_grabacion.get()
+            self.boton_grabar.config(text="Detener Grabación")
+            self.grabando = True
+            # Agregar aquí la lógica para iniciar la grabación del video
+        else:
+            # Detener la grabación
+            self.boton_grabar.config(text="Grabar")
+            self.grabando = False
+
+    def show_widgets(self):
+        # Mostrar botones ocultos
+        self.button1.pack(pady=5)
+        self.button2.pack(pady=5)
+
+        # Mostrar lista desplegable oculta
+        self.dropdown.pack(pady=5)
+
     def capturar_fotograma(self):
         # Capturar un fotograma de la cámara
         ret, frame = self.cap.read()
@@ -422,7 +459,6 @@ class AplicacionCamara:
 
         #grid_dim = (N // (block_dim[0]*2), M // (block_dim[1]*2), 1)
         #fft_shift
-        print("maguiver")
         grid_dim = (N // (block_dim[0]*2), M // (block_dim[1]*2), 1)
         self.fft_shift(self.holo2, self.holo, np.int32(N), np.int32(M), block=block_dim, grid=grid_dim)
         
@@ -541,7 +577,15 @@ class AplicacionCamara:
         #Obtención de la reconstrucción
         mai = self.U_gpu.get()
         frame = 255*mai.reshape((N, M))
+
+
         self.ini = 2
+        self.start_time = time.time()
+        self.frame_count = 0
+        if(self.ini2 == 1):
+            self.opciones_grabacion.grid(row=5, column=1, padx=10, pady=10)
+            self.boton_grabar.grid(row=5, column=2, padx=10, pady=10)
+            self.ini2 = 2
         return frame1,frame
     
     #Algoritmo para los demás frames
@@ -660,6 +704,14 @@ class AplicacionCamara:
         finale = 255*mai.reshape((N, M))
         
         return frame1,finale
+    def update(self):
+        self.frame_count += 1
+        elapsed_time = time.time() - self.start_time
+        if elapsed_time >= 1.0:  # Actualiza cada segundo
+            fps = self.frame_count / elapsed_time
+            print(f"FPS: {fps:.2f}")
+            self.frame_count = 0
+            self.start_time = time.time()
 
     #Esta es la función principal de la GUI, se encarga de actualizar fotograma a fotograma
     def mostrar_fotogramas(self):
@@ -675,19 +727,24 @@ class AplicacionCamara:
                     frame_trans1,frame_trans2= self.transformacion_2(frame)
                 # Convertir los fotogramas a formato adecuado para Tkinter
                 
+                M,N = frame.shape
                 img_original = Image.fromarray((cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)))
                 
+                img_original = img_original.resize((round(M*0.75),round(N*0.75)))
                 #transformada de fourier
                 frame_trans1 = frame_trans1.astype(np.uint8)
-
+                
                 img_trans1 = Image.fromarray(cv2.cvtColor(frame_trans1, cv2.COLOR_GRAY2RGB))
+                img_trans1 = img_trans1.resize((round(M*0.75),round(N*0.75)))
+                
                 frame_trans2 = frame_trans2.astype(np.uint8)
                 img_trans2 = Image.fromarray(cv2.cvtColor(frame_trans2, cv2.COLOR_GRAY2RGB))
+                img_trans2 = img_trans2.resize((round(M*0.75),round(N*0.75)))
                 
                 #Resultado
                 img_original_tk = ImageTk.PhotoImage(image=img_original)
                 img_trans1_tk = ImageTk.PhotoImage(image=img_trans1)
-                img_trans2_tk = ImageTk.PhotoImage(image=img_trans2)
+                img_trans2_tk = ImageTk.PhotoImage(image= img_trans2)
 
                 # Mostrar las imágenes en los widgets Label
                 self.label_original.configure(image=img_original_tk)
@@ -698,9 +755,10 @@ class AplicacionCamara:
 
                 self.label_transformacion2.configure(image=img_trans2_tk)
                 self.label_transformacion2.image = img_trans2_tk
+                self.update()
 
         # Llamar al método cada 20 milisegundos para mostrar el siguiente fotograma
-        self.ventana.after(2, self.mostrar_fotogramas)
+        self.ventana.after(20, self.mostrar_fotogramas)
     
     #Esta función permite reconocer los parámetros para la reconstrucción
     def aplicar_transformaciones(self):

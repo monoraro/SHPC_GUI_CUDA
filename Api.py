@@ -1,35 +1,26 @@
-from fastapi import FastAPI, BackgroundTasks
-from fastapi.responses import StreamingResponse
 import cv2
 
-app = FastAPI()
-camera = cv2.VideoCapture(0)
+# Crea un objeto de captura de video para la primera cámara disponible
+cap = cv2.VideoCapture(0)
 
-def generate_frames():
+# Verifica si la cámara se abrió correctamente
+if not cap.isOpened():
+    print("Error: No se pudo abrir la cámara")
+else:
+    # Captura continuamente imágenes de la cámara
     while True:
-        success, frame = camera.read()
-        if not success:
+        # Captura un fotograma de la cámara
+        ret, frame = cap.read()
+
+        # Verifica si el fotograma se capturó correctamente
+        if ret:
+            # Muestra el fotograma en una ventana
+            cv2.imshow('Camera', frame)
+
+        # Espera un tiempo (en milisegundos) y verifica si se presionó la tecla 'q' para salir del bucle
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        else:
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-@app.get("/video_feed")
-async def video_feed():
-    return StreamingResponse(generate_frames(), media_type="multipart/x-mixed-replace;boundary=frame")
-
-@app.post("/start_stream")
-async def start_stream(background_tasks: BackgroundTasks):
-    global camera
-    camera = cv2.VideoCapture(0)
-
-@app.post("/stop_stream")
-async def stop_stream():
-    global camera
-    camera.release()
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Libera la captura de video y cierra todas las ventanas
+    cap.release()
+    cv2.destroyAllWindows()

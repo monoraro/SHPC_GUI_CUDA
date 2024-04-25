@@ -12,7 +12,7 @@ import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 import pycuda.gpuarray as gpuarray
-import skcuda.fft as cu_fft
+import cupy as cp
 from pycuda.reduction import ReductionKernel
 import os
 from matplotlib.widgets import Slider
@@ -369,8 +369,7 @@ grid_dim = (N // (block_dim[0]*2), M // (block_dim[1]*2), 1)
 fft_shift_var_no_compleja(holo2,U_gpu,np.int32(N),np.int32(M),block=block_dim, grid=grid_dim)
 
 #Fourier
-plan = cu_fft.Plan((N,M), np.complex64, np.complex64)
-cu_fft.fft(holo2, holo, plan)
+holo2 = cp.fft.fft(holo)
 
 #grid_dim = (N // (block_dim[0]*2), M // (block_dim[1]*2), 1)
 #fft_shift
@@ -392,7 +391,7 @@ grid_dim = (N // (block_dim[0]*2), M // (block_dim[1]*2), 1)
 #Amplitud de la imagen hasta el momentojunpei girlfriend combatchidori co
 fft_shift(holo2, holo, np.int32(N), np.int32(M), block=block_dim, grid=grid_dim)
 
-cu_fft.ifft(holo2, holo, plan)
+holo2 = cp.fft.fft(holo)
 
 grid_dim = (N // (block_dim[0]*2), M // (block_dim[1]*2), 1)
 fft_shift(holo2, holo, np.int32(N), np.int32(M), block=block_dim, grid=grid_dim)
@@ -518,7 +517,7 @@ for frame in archivos_ordenados:
     fft_shift_var_no_compleja(holo2,U_gpu,np.int32(N),np.int32(M),block=block_dim, grid=grid_dim)
 
     #Fourier
-    cu_fft.fft(holo2, holo, plan)
+    holo2 = cp.fft.fft(holo)
     
     #fft_shift
     grid_dim = (N // (block_dim[0]*2), M // (block_dim[1]*2), 1)
@@ -532,7 +531,7 @@ for frame in archivos_ordenados:
     #Amplitud de la imagen hasta el momentojunpei girlfriend combatchidori co
     fft_shift(holo2, holo, np.int32(N), np.int32(M), block=block_dim, grid=grid_dim)
 
-    cu_fft.ifft(holo2, holo, plan)
+    holo2 = cp.fft.fft(holo)
 
     grid_dim = (N // (block_dim[0]*2), M // (block_dim[1]*2), 1)
     fft_shift(holo2, holo, np.int32(N), np.int32(M), block=block_dim, grid=grid_dim)

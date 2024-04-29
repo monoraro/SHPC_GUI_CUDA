@@ -1,3 +1,5 @@
+
+#Prueba de captura de video en una api
 import cv2
 
 # Crea un objeto de captura de video para la primera cámara disponible

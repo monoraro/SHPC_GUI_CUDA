@@ -1,7 +1,8 @@
-#Este código es el intento de programar una versión paralelizada del
-#algoritmo SHPC desarrollado por sofía, carlos y ana
-#El autor de este código es Johan, y espero que sirva en un futuro dado
+"""
+Este código permite ingresar una carpeta de hologramas y reconstruirlos
 
+finalmente guarda el resultado en video
+"""
 
 #Carga de librerias
 import cv2

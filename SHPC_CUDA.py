@@ -1,7 +1,6 @@
-#Este código es el intento de programar una versión paralelizada del
-#algoritmo SHPC desarrollado por sofía, carlos y ana
-#El autor de este código es Johan, y espero que sirva en un futuro dado
-
+"""
+Versión paralelizada del SHPC
+"""
 
 #Carga de librerias
 

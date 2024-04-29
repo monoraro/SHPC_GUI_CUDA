@@ -1,7 +1,6 @@
-#Este código es el intento de programar una versión no paralelizada del
-#algoritmo SHPC desarrollado por sofía, carlos y ana
-#El autor de este código es Johan, y espero que sirva en un futuro dado
-
+"""
+Implementación del SHPC de forma serial en python
+"""
 
 #Carga de librerias
 import cv2

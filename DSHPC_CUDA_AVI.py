@@ -1,6 +1,7 @@
-#Este código es el intento de programar una versión paralelizada del
-#algoritmo SHPC desarrollado por sofía, carlos y ana
-#El autor de este código es Johan, y espero que sirva en un futuro dado
+"""
+Este código es para la reconstrucción dinámica de un holograma en video
+y el resultado se visualiza en plt
+"""
 
 
 #Carga de librerias
